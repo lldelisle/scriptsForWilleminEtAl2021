@@ -1,0 +1,3 @@
+track type=bed name='regions_to_quantify_4C'
+chr10	96120001	97019221	welc_TAD_left_of_int_mm10_613K_coordinates
+chr10	97083637	97400000	welc_TAD_right_of_int_mm10_613K_coordinates

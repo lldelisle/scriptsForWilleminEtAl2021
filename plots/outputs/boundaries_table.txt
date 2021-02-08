@@ -1,0 +1,17 @@
+Atf2_boundary	CS3840_boundary	Hnrnpa3_boundary	HoxD_boundary	insertion_boundary	welcoming_left_boundary	welcoming_right_boundary
+E12_Limbs_TgN3840_map_mm10_240	1	0	1	1	1	1	1
+E12_Limbs_TgN3840_map_mm10_320	1	0	1	1	1	1	0
+E12_Limbs_TgN3840_map_mm10_480	0	0	1	1	1	1	0
+E12_Limbs_TgN3840_map_mm10_800	0	0	0	1	0	1	1
+E12_Limbs_TgN3840_map_TgN3840_240	1	0	1	1	1	1	1
+E12_Limbs_TgN3840_map_TgN3840_320	1	0	1	1	1	1	0
+E12_Limbs_TgN3840_map_TgN3840_480	0	0	1	1	0	1	1
+E12_Limbs_TgN3840_map_TgN3840_800	0	0	0	1	0	1	1
+E12_Limbs_Wt_map_mm10_240	1	1	1	1	0	1	1
+E12_Limbs_Wt_map_mm10_320	1	0	1	1	0	1	1
+E12_Limbs_Wt_map_mm10_480	0	0	1	1	0	1	1
+E12_Limbs_Wt_map_mm10_800	0	0	0	1	0	1	1
+E12_Limbs_Wt_map_TgN3840_240	1	0	1	1	0	1	1
+E12_Limbs_Wt_map_TgN3840_320	1	0	1	1	0	1	1
+E12_Limbs_Wt_map_TgN3840_480	0	0	1	1	0	1	1
+E12_Limbs_Wt_map_TgN3840_800	0	0	0	1	0	1	1

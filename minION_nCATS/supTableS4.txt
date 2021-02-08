@@ -1,0 +1,34 @@
+The longest mapped read is: 76241 .
+The longest targetted read is: 36312 .
+The N50 is: 7610 .
+The N50 in targetted reads is: 9878 .
+Threshold: 0 kb.
+There are 433 reads targetted out of 776913 .
+There are 433 reads targetted out of 686250  mapped.
+There are 248 reads targetted which fully mapped on the construct. And 40 which support the insertion.
+Ratio fully mapped: 0.0003192121 .
+Ratio both: 0.0003706979 .
+There are 1,654,070 bases from reads which fully mapped on the construct out of  2,823,381,905 . And 29,889 bases from reads which support the insertion.
+Ratio fully mapped: 0.0005858471 .
+Ratio both: 0.0005964333 .
+The construct is 64,420 bp and a haploid genome is around 2.6 Gbp ( 2.457384e-05 )
+So the enrichment is: 23.84028 
+The construct with insertion is 65,020 bp and a haploid genome is around 2.6 Gbp ( 2.480271e-05 )
+So the enrichment is: 24.0471 
+
+
+Threshold: 2 kb.
+There are 240 reads targetted out of 372655 .
+There are 240 reads targetted out of 348759  mapped.
+There are 180 reads targetted which fully mapped on the construct. And 0 which support the insertion.
+Ratio fully mapped: 0.0004830205 .
+Ratio both: 0.0004830205 .
+There are 1,583,862 bases from reads which fully mapped on the construct out of  2,495,725,562 . And 0 bases from reads which support the insertion.
+Ratio fully mapped: 0.0006346299 .
+Ratio both: 0.0006346299 .
+The construct is 64,420 bp and a haploid genome is around 2.6 Gbp ( 2.457384e-05 )
+So the enrichment is: 25.82543 
+The construct with insertion is 65,020 bp and a haploid genome is around 2.6 Gbp ( 2.480271e-05 )
+So the enrichment is: 25.58712 
+
+

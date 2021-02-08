@@ -1,0 +1,10 @@
+track type=bed name="annotated boundaries"
+chr2	73900000	73940000	Atf2_boundary
+chr2	74660000	74700000	HoxD_boundary
+chr2	75140000	75180000	CS3840_boundary
+chr2	75540000	75620000	Hnrnpa3_boundary
+chr10	96100000	96140000	welcoming_left_boundary
+chr10	96580000	96620000	Btg1_CTCF
+chr10	97020000	97100000	insertion_boundary
+chr10	97300000	97420000	welcoming_right_boundary
+

@@ -1,0 +1,4 @@
+track type=bedGraph name=expected_CN_noIntegration
+chr2	0	75133816	2
+chr2	75133816	75153815	0
+chr2	75153815	182113224	2

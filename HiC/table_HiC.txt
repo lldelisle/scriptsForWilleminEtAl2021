@@ -1,0 +1,4 @@
+1	E12_Limbs_TgN3840_map_mm10	E12_Limbs_TgN3840_R1.fastq.gz	E12_Limbs_TgN3840_R2.fastq.gz
+2	E12_Limbs_Wt_map_mm10	E12_Limbs_Wt_R1.fastq.gz	E12_Limbs_Wt_R2.fastq.gz
+3	E12_Limbs_TgN3840_map_TgN3840	E12_Limbs_TgN3840_R1.fastq.gz	E12_Limbs_TgN3840_R2.fastq.gz
+4	E12_Limbs_Wt_map_TgN3840	E12_Limbs_Wt_R1.fastq.gz	E12_Limbs_Wt_R2.fastq.gz
