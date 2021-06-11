@@ -18,7 +18,7 @@ gitHubDirectory=$1
 path="$PWD/"
 pathForTableWithSamples="${gitHubDirectory}/HiC/table_HiC.txt"
 pathForScripts=${gitHubDirectory}/scripts/
-genome="mm10"
+genome="mm10" # This is the full mm10 from: https://hgdownload.soe.ucsc.edu/goldenPath/mm10/bigZips/mm10.fa.gz
 restSeq="^GATC"
 restName="DpnII"
 genomePath="/home/ldelisle/genomes/"
@@ -28,7 +28,7 @@ pathForSizes="${genomePath}/fasta/${genome}.fa.fai"
 pathForHiCUP="${path}/hicup_v0.7.3/"
 pathForFastq="${path}/fastq/"
 
-bins="40"
+bins="20 40"
 
 nThreads=4
 

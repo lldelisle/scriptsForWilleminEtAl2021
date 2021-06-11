@@ -106,6 +106,21 @@ for f in ${pathForChIPGEO}/*bedgraph; do
   fi
 done
 
+# Convert bedgraph.gz to bigwig:
+for f in ${pathForChIPGEO}/*bedgraph.gz; do
+  bigwig=${f/bedgraph.gz/bw}
+  if [[ $f = *"_on_TgN3840"* ]]; then
+    my_sizes=${pathForMutantGenomes}/TgN3840/mm10_TgN3840.fa.fai
+  else
+    my_sizes=$pathForChromSizes
+  fi
+  if [ ! -e $bigwig ]; then
+    tempfile=$(mktemp)
+    zcat $f | grep -v track | LC_COLLATE=C sort -k1,1 -k2,2n > $tempfile
+    bedGraphToBigWig $tempfile $my_sizes $bigwig
+  fi
+done
+
 # Concatenate peaks files:
 for prot in CTCF RAD21; do
   sample=E12_Limbs_TgN3840_${prot}
@@ -113,10 +128,14 @@ for prot in CTCF RAD21; do
 done
 
 # Shift the H3K27Ac to mutant genome:
-zcat ${pathForChIPGEO}/E12_DFL_Wt_H3K27ac_on_mm10.bedgraph.gz | awk '$1 == "chr10"{print}' > ${pathForChIPGEO}/E12_DFL_Wt_H3K27ac_chr10.bedgraph
-Rscript ${pathForScripts}/shiftAnnot_TgN3840.R ${pathForChIPGEO}/E12_DFL_Wt_H3K27ac_chr10.bedgraph 1 2 3 ${pathForChIPGEO}/E12_DFL_Wt_H3K27ac_chr10_shifted_Tg3840.bedgraph
-my_sizes=${pathForMutantGenomes}/TgN3840/mm10_TgN3840.fa.fai
-bedGraphToBigWig ${pathForChIPGEO}/E12_DFL_Wt_H3K27ac_chr10_shifted_Tg3840.bedgraph $my_sizes ${pathForChIPGEO}/E12_DFL_Wt_H3K27ac_chr10_shifted_Tg3840.bw
+for f in ${pathForChIPGEO}/*H3K27ac*.bedgraph.gz; do
+  if [ ! -e ${f/.bedgraph.gz/_chr10_shifted_Tg3840.bw} ]; then 
+    zcat ${f} | awk '$1 == "chr10"{print}' > ${f/.bedgraph.gz/_chr10.bedgraph}
+    Rscript ${pathForScripts}/shiftAnnot_TgN3840.R ${f/.bedgraph.gz/_chr10.bedgraph} 1 2 3 ${f/.bedgraph.gz/_chr10_shifted_Tg3840.bedgraph}
+    my_sizes=${pathForMutantGenomes}/TgN3840/mm10_TgN3840.fa.fai
+    bedGraphToBigWig ${f/.bedgraph.gz/_chr10_shifted_Tg3840.bedgraph} $my_sizes ${f/.bedgraph.gz/_chr10_shifted_Tg3840.bw}
+  fi
+done
 
 # Get bed for fosmid end in _TH_TT_HH
 echo "track type=bed name=fosmid_boundaries_on_TH_TT_HH" > fosmid_boundaries_on_TH_TT_HH.bed
@@ -126,8 +145,14 @@ done
 
 bedtools slop -i fosmid_boundaries_on_TH_TT_HH.bed -g ${gitHubDirectory}/TLA/fasta/TgN3840_fosmid_TH_TT_HH.fa.fai -b 500 > fosmid_boundaries_on_TH_TT_HH_1kb.bed
 
+# Regions for figure S4:
+echo "chr1:86361848-86443336
+chr8:105464678-105542097
+chr19:42133996-42203157" | tr ":|-" "\t" > figS4.bed
+
 # For each figure the ini file is generated followed by the plot command
-ini_file="fig1A-C.ini"
+colors_tads=('lightskyblue' 'steelblue' 'lightcoral' 'darkred')
+ini_file="fig1A-D.ini"
 echo "[x-axis]
 
 [scalebar]
@@ -137,6 +162,7 @@ scalebar_end_position = 75750000
 height = 0.3
 " > ${ini_file}
 
+i=0
 for genotype in Wt TgN3840; do
   sample=E12_Limbs_${genotype}_map_mm10
   echo "[Hi-C ${sample}]
@@ -151,11 +177,8 @@ min_value = 0
 max_value = 0.04
 " >> ${ini_file}
   for size in 240 480; do
-    if [ $size = "240" ]; then
-      color=grey
-    else
-      color=black
-    fi
+    color=${colors_tads[$i]}
+    i=$((i+1))
     echo "[spacer]
 height = 0.25
 
@@ -174,7 +197,36 @@ display = interleaved
 height = 1
 " >> ${ini_file}
 done
-echo "[E12_Limbs_CTCF]
+i=0
+for genotype in Wt TgN3840; do
+  sample=E12_Limbs_${genotype}_map_mm10
+  for size in 240 480; do
+    color=${colors_tads[$i]}
+    echo "
+[${sample}.${size}kb_tad_score]
+file = ${pathForHiC}/TADs_diff/${sample}.40kb.${size}kb_tad_score.bm
+color = ${color}
+use_middle = true
+type = line:1
+file_type = bedgraph" >> ${ini_file}
+    if [ $i = "0" ]; then
+      echo "title = 40kb all tad_score
+min_value = -2.2
+max_value = 2.2
+height = 3
+" >> ${ini_file}
+    else
+      echo "overlay_previous = share-y
+show_data_range = false
+" >> ${ini_file}
+    fi
+    i=$((i+1))
+  done
+done  
+echo "[spacer]
+height = 1
+
+[E12_Limbs_CTCF]
 file = ${pathForChIPGEO}/E12_Limbs_Wt_CTCF_on_mm10.bw
 title = Limbs_E12_Wt_CTCF
 height = 3
@@ -240,7 +292,15 @@ pgt --tracks ${ini_file} --region chr2:73640001-75800000 \
   -o ${ini_file/ini/pdf} --dpi 500 --plotWidth 34.76 \
   --trackLabelFraction 0.3
 
-ini_file="fig1D.ini"
+cp ${ini_file} ${ini_file/.ini/20kb.ini}
+sed -i "s/40kb/20kb/g" ${ini_file/.ini/20kb.ini}
+sed -i "s/220kb/240kb/g" ${ini_file/.ini/20kb.ini}
+sed -i "s/0.04/0.03/g" ${ini_file/.ini/20kb.ini}
+pgt --tracks ${ini_file/.ini/20kb.ini} --region chr2:73640001-75800000 \
+  -o ${ini_file/.ini/20kb.pdf} --dpi 500 --plotWidth 34.76 \
+  --trackLabelFraction 0.3
+
+ini_file="fig1E.ini"
 echo "[x-axis]
 
 [scalebar]
@@ -408,9 +468,13 @@ for prot in CTCF RAD21; do
     if [ $genotype = "TgN3840" ]; then
       file=${pathForChIPGEO}/${sample}_neq2_on_mm10.bw
       macs=${pathForChIPGEO}/${sample}_rep1or2_on_mm10.bed
+      max_value=${maxvalues[$i]}
+      h_line=$(echo $max_value | awk '{print $1 / 2}')
     else
       file=${pathForChIPGEO}/${sample}_on_mm10.bw
-      macs=${pathForChIPGEO}/${sample}.bed
+      macs=${pathForChIPGEO}/${sample}_on_mm10.bed
+      max_value=${maxvalues[$i]}
+      h_line=$max_value
     fi
     echo "[$sample]
 file = ${file}
@@ -420,9 +484,19 @@ color = black
 nans_to_zeros = true
 number_of_bins = 5000
 min_value = 0
-max_value = ${maxvalues[$i]}
-
-[spacer]
+max_value = $max_value
+" >> ${ini_file}
+    if [ $prot = "CTCF" ]; then
+      echo "[hline]
+file_type = hlines
+y_values = $h_line
+overlay_previous = share-y
+line_style = dashed
+show_data_range = false
+color = grey
+" >> ${ini_file}
+    fi
+    echo "[spacer]
 height = 0.15
 
 [MACS2 ${sample}]
@@ -498,6 +572,7 @@ file_type = bed
 pgt --tracks ${ini_file} --region chr2:75105976-75176976 \
   -o ${ini_file/ini/pdf} --dpi 500 --plotWidth 36
 
+colors_tads=('lightskyblue' 'steelblue' 'lightcoral' 'darkred')
 ini_file="fig3B-E.ini"
 echo "[x-axis]
 
@@ -532,13 +607,11 @@ display = collapsed
 color = bed_rgb
 border_color = bed_rgb
 " >> ${ini_file}
-  for size in 240 480; do
-    if [ $size = "240" ]; then
-      color=grey
-    else
-      color=black
-    fi
-    echo "[spacer]
+i=0
+for size in 240 480; do
+  color=${colors_tads[$i]}
+  i=$((i+1))
+  echo "[spacer]
 height = 0.25
 
 [${sample}.${size}kb_domains]
@@ -551,9 +624,9 @@ labels = false
 line_width = 1
 display = interleaved
 " >> ${ini_file}
-  done
+done
 
-  echo "[spacer]
+echo "[spacer]
 height = 1
 
 [E12_DFL_Wt_H3K27ac_chr10_shifted_Tg3840]
@@ -719,8 +792,8 @@ pgt --tracks ${ini_file} --region chr10:95480001-97880000 \
   -o ${ini_file/ini/pdf} --dpi 500 --plotWidth 34 \
   --trackLabelFraction 0.3
 
-
-ini_file="fig4A-C.ini"
+ini_file="fig4A-D.ini"
+colors_tads=('lightskyblue' 'steelblue' 'lightcoral' 'darkred')
 echo "[x-axis]
 
 [scalebar]
@@ -730,11 +803,17 @@ scalebar_end_position = 97800000
 height = 0.3
 " > ${ini_file}
 
+i=0
 for genotype in Wt TgN3840; do
   sample=E12_Limbs_${genotype}_map_TgN3840
+  if [ $genotype = "Wt" ]; then
+    suffix=" corrected for powerlaw decay"
+  else
+    suffix=""
+  fi
   echo "[Hi-C ${sample}]
-file = ${pathForHiC}/${sample}/${sample}.40kb.cool
-title = $sample 40kb
+file = ${pathForHiC}/decay/${sample}_welcoming_tad.cool
+title = $sample 40kb only welcoming_tad$suffix
 colormap = ['white', (1, 0.88, 0.66), (1, 0.74, 0.25), (1, 0.5, 0), (1, 0.19, 0), (0.74, 0, 0), (0.35, 0, 0)]
 depth = 2000000
 transform = no
@@ -762,15 +841,10 @@ line_width = 1
 display = collapsed
 color = bed_rgb
 border_color = bed_rgb
-
-[spacer]
-height = 0.25" >> ${ini_file}
+" >> ${ini_file}
   for size in 240 480; do
-    if [ $size = "240" ]; then
-      color=grey
-    else
-      color=black
-    fi
+    color=${colors_tads[$i]}
+    i=$((i+1))
     echo "[spacer]
 height = 0.25
 
@@ -787,51 +861,48 @@ display = interleaved
   done
 
   echo "[spacer]
-height = 0.25
+height = 1
 " >> ${ini_file}
-  size=240
+done
+i=0
+for genotype in Wt TgN3840; do
+  sample=E12_Limbs_${genotype}_map_TgN3840
+  for size in 240 480; do
+    color=${colors_tads[$i]}
     echo "
 [${sample}.${size}kb_tad_score]
 file = ${pathForHiC}/TADs_diff/${sample}.40kb.${size}kb_tad_score.bm
-title = ${sample} 40kb all tad_score
-color = black
+color = ${color}
 use_middle = true
+type = line:1
+file_type = bedgraph" >> ${ini_file}
+    if [ $i = "0" ]; then
+      echo "title = 40kb all tad_score
 min_value = -2
 max_value = 2
-type = line:1
 height = 3
-file_type = bedgraph
 " >> ${ini_file}
-  for size in 480; do
-    echo "[${sample}.${size}kb_tad_score]
-file = ${pathForHiC}/TADs_diff/${sample}.40kb.${size}kb_tad_score.bm
-color = grey
-use_middle = true
-type = line
-overlay_previous = share-y
-file_type = bedgraph" >> ${ini_file}
+    else
+      echo "overlay_previous = share-y
+show_data_range = false
+" >> ${ini_file}
+    fi
+    i=$((i+1))
   done
-
-  echo "[hline]
-file_type = hlines
-y_values = 0
-overlay_previous = share-y
-line_style = dashed
-
-[spacer]
-height = 0.25
-" >> ${ini_file}
 done
-echo "[Difference 40kb]
-file = ${pathForHiC}/TADs_diff/E12_Limbs_TgN3840MinusWt_map_TgN3840.40kb.cool
-title = E12_Limbs_TgN3840MinusWt_map_TgN3840 40kb
+echo "[spacer]
+height = 1
+
+[Difference 40kb]
+file = ${pathForHiC}/decay/E12_Limbs_TgN3840_map_TgN3840MinusE12_Limbs_Wt_map_TgN3840_welcoming_tad.cool
+title = E12_Limbs_TgN3840MinusWt_map_TgN3840 40kb only welcoming TAD (powerlaw decay corrected)
 colormap = bwr
 depth = 2000000
 transform = no
 show_masked_bins = true
 rasterize = false
-min_value = -1.5e-7
-max_value = 1.5e-7
+min_value = -0.02
+max_value = 0.02
 
 [Quantification_region]
 file = interSubTAD.bedpe
@@ -843,6 +914,21 @@ line_style = dashed
 overlay_previous = share-y
 
 [spacer]
+height = 1
+" >> ${ini_file}
+for sample in E12_DFL_Wt GSM2192207_E12_Limb GSM2191220_E12_Liver; do
+  echo "[${sample}_H3K27ac_chr10_shifted_Tg3840]
+file = ${pathForChIPGEO}/${sample}_H3K27ac_on_mm10_chr10_shifted_Tg3840.bw
+title = ${sample}_H3K27ac_chr10_scaled_shifted_Tg3840
+height = 3
+color = green
+nans_to_zeros = true
+number_of_bins = 11600
+min_value = 0
+max_value = 3
+" >> ${ini_file}
+done
+echo "[spacer]
 height = 1
 
 [Genes]
@@ -1105,8 +1191,135 @@ pgt --tracks ${ini_file} --region chr10:97019018-97020046 \
   -o ${ini_file/ini/pdf} --dpi 500 --plotWidth 20 \
   --trackLabelFraction 0.3
 
+ini_file="figS4.ini"
+echo "[x-axis]
+
+[scalebar]
+file_type = scalebar
+size = 10000
+height = 0.3
+" > ${ini_file}
+
+maxvalues=('8' '4.6')
+i=0
+for prot in CTCF; do
+  for genotype in Wt TgN3840; do
+    sample=E12_Limbs_${genotype}_${prot}
+    if [ $genotype = "TgN3840" ]; then
+      file=${pathForChIPGEO}/${sample}_neq2_on_mm10.bw
+      macs=${pathForChIPGEO}/${sample}_rep1or2_on_mm10.bed
+      max_value=${maxvalues[$i]}
+      h_line=$(echo $max_value | awk '{print $1 / 2}')
+    else
+      file=${pathForChIPGEO}/${sample}_on_mm10.bw
+      macs=${pathForChIPGEO}/${sample}_on_mm10.bed
+      max_value=${maxvalues[$i]}
+      h_line=$max_value
+    fi
+    echo "[$sample]
+file = ${file}
+title = ${sample}
+height = 3
+color = black
+nans_to_zeros = true
+number_of_bins = 5000
+min_value = 0
+max_value = $max_value
+
+[hline]
+file_type = hlines
+y_values = $h_line
+overlay_previous = share-y
+line_style = dashed
+show_data_range = false
+color = grey
+
+[spacer]
+height = 0.15
+
+[MACS2 ${sample}]
+file = ${macs}
+title = MACS2 ${sample}
+color = black
+height = 0.2
+labels = false
+line_width = 1
+display = collapsed
+file_type = bed
+
+[spacer]
+height = 0.15
+" >> ${ini_file}
+    i=$(($i + 1))
+  done
+done
+echo "[spacer]
+height = 1
+
+[Genes]
+file = gencode.vM23.protcod.gtf
+title = genes on mm10_protein_coding
+color = black
+height = 2
+line_width = 0.5
+merge_transcripts = true
+prefered_name = gene_name
+" >> ${ini_file}
+
+pgt --tracks ${ini_file} --BED figS4.bed \
+  -o ${ini_file/ini/pdf} --dpi 500 --plotWidth 36
+
+ini_file="FigS5B.ini"
+n=8
+echo "[x-axis]
+
+[scalebar]
+file_type = scalebar
+size = 100000
+height = 0.3
+" > ${ini_file}
+
+sample=E12_Limbs_Wt_map_mm10
+domains=${pathForHiC}/TADs_diff/${sample}.40kb.240kb_domains.bed
+domains=${pathForHiC}/decay/$(basename $domains .bed)_adjusted.bed
+echo "[Hi-C ${sample}]
+file = ${pathForHiC}/${sample}/${sample}.40kb.cool
+title = $sample 40kb
+colormap = ['white', (1, 0.88, 0.66), (1, 0.74, 0.25), (1, 0.5, 0), (1, 0.19, 0), (0.74, 0, 0), (0.35, 0, 0)]
+depth = 1040000
+transform = no
+show_masked_bins = true
+rasterize = false
+min_value = 0
+max_value = 0.04
+" >> ${ini_file}
+color='lightskyblue'
+echo "[spacer]
+height = 0.25
+
+[${sample}.240kb_domains]
+file = $domains
+title = ${sample} 40kb 240kb_domains adjusted
+color = ${color}
+border_color = none
+height = 0.5
+labels = false
+line_width = 1
+display = interleaved
+" >> ${ini_file}
+
+region=$(head -n $n $domains | awk 'NR==1{chr=$1; start=$2}END{print chr":"start"-"$3}')
+
+pgt --tracks ${ini_file} --region ${region} \
+  -o ${ini_file/ini/pdf} --dpi 500 --plotWidth 34 \
+  --trackLabelFraction 0.3
+
 ### STATISTICS
 # On 4C:
+# Fragments stats:
+python ${pathForScripts}/4C/getStats.py ${pathFor4CGEO} stats_4C.txt
+
+# Quantification:
 Rscript ${pathForScripts}/4C_quantification.R \
   ${pathFor4CGEO}/segToFrag_E12_Limbs_TgN3840_CTCF-left.bw \
   ${pathFor4CGEO}/segToFrag_E12_Limbs_Wt_CTCF-left.bw \
@@ -1125,6 +1338,10 @@ Rscript ${pathForScripts}/4C_quantification.R \
 # right of integration: +64%%
 
 # On Hi-C
+# QC:
+Rscript ${pathForScripts}/hic_stats.R ${pathForHiC} ${gitHubDirectory}/HiC/supTableS5.txt
+
+# Quantification without correction:
 sample1=E12_Limbs_TgN3840_map_TgN3840
 cool1=${pathForHiC}/${sample1}/${sample1}.40kb.cool
 sample2=E12_Limbs_Wt_map_TgN3840
@@ -1136,8 +1353,42 @@ python ${pathForScripts}/quantifyCooler.py \
 # Region  Mean_first_file Mean_second_file        ratio   pval_Mann_Whitney_U_test        pval_Wilcoxon_signed_rank_test
 # interSubTAD     0.0075496819956354265   0.012972878417607676    0.5819588955207106      1.8909929157763953e-32  1.5259922107013315e-25
 
+# Quantification with decay correction:
+sample1=E12_Limbs_TgN3840_map_TgN3840
+cool1=${pathForHiC}/decay/${sample1}_welcoming_tad.cool
+sample2=E12_Limbs_Wt_map_TgN3840
+cool2=${pathForHiC}/decay/${sample2}_welcoming_tad.cool
+python ${pathForScripts}/quantifyCooler.py \
+  --bedpe interSubTAD.bedpe --cool1 ${cool1} \
+  --cool2 ${cool2} --raw
+
+# Region  Mean_first_file Mean_second_file        ratio   pval_Mann_Whitney_U_test        pval_Wilcoxon_signed_rank_test
+# interSubTAD     0.007549680056818182    0.01239924119318182     0.6088824258834203      2.3976253542372657e-29  2.3216754052980333e-24
+
 # Boundaries
 Rscript ${pathForScripts}/getBoundariesTable.R ${pathForHiC} ${pathForScripts}/annotations/annotated_boundaries.bed boundaries_table.txt
+
+# Resolution
+for sample in E12_Limbs_Wt_map_mm10 E12_Limbs_Wt_map_TgN3840; do
+  for bin in 20 40; do
+    cool_file=${pathForHiC}/${sample}/${sample}.${bin}kb.cool
+    totBins=$(cooler dump -t bins ${cool_file} | wc -l)
+    echo $cool_file
+    cooler dump --join ${cool_file} | awk -v tot=$totBins '$1==$4{sum[$1"_"$2]+=$7;if($2!=$5){sum[$4"_"$5]+=$7}}END{above=0;for(bin in sum){if(sum[bin]>=1000){above += 1}}; print above / tot * 100 "% of bins with more than 1000 contacts in cis."}'
+  done
+done
+
+# /scratch/ldelisle/HiC//E12_Limbs_Wt_map_mm10/E12_Limbs_Wt_map_mm10.20kb.cool
+# 20.6481% of bins with more than 1000 contacts in cis.
+# /scratch/ldelisle/HiC//E12_Limbs_Wt_map_mm10/E12_Limbs_Wt_map_mm10.40kb.cool
+# 85.1818% of bins with more than 1000 contacts in cis.
+# /scratch/ldelisle/HiC//E12_Limbs_Wt_map_TgN3840/E12_Limbs_Wt_map_TgN3840.20kb.cool
+# 47.133% of bins with more than 1000 contacts in cis.
+# /scratch/ldelisle/HiC//E12_Limbs_Wt_map_TgN3840/E12_Limbs_Wt_map_TgN3840.40kb.cool
+# 93.369% of bins with more than 1000 contacts in cis.
+
+# Get the FigS5A:
+mv ${pathForHiC}/decay/FigS5A.pdf .
 
 # Figure 2e:
 cd ${pathMinION}
@@ -1152,3 +1403,5 @@ wget "jura.wi.mit.edu/page/papers/Hughes_et_al_2005/tables/dot_plot.pl" -O ${git
 Rscript ${gitHubDirectory}/scripts/minION/dotplot_selected_reads.R
 
 mv fig2E.pdf ${path}
+
+cd ${path}

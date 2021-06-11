@@ -14,7 +14,7 @@
 gitHubDirectory=$1
 
 path="$PWD/"
-bins="40"
+bins="20 40"
 sizes="240 320 480 800"
 pathForTableWithSamples="${gitHubDirectory}/HiC/table_HiC.txt"
 
@@ -52,9 +52,9 @@ done
 # We will perform the difference between
 mutant=E12_Limbs_TgN3840_map_TgN3840
 control=E12_Limbs_Wt_map_TgN3840
-mutant_cool=${path}/${mutant}/${mutant}.${bin}kb.cool
-control_cool=${path}/${control}/${control}.${bin}kb.cool
 for bin in $bins; do
+  mutant_cool=${path}/${mutant}/${mutant}.${bin}kb.cool
+  control_cool=${path}/${control}/${control}.${bin}kb.cool
   if [ ! -e E12_Limbs_TgN3840MinusWt_map_TgN3840.${bin}kb.cool ]; then
     echo "building E12_Limbs_TgN3840MinusWt_map_TgN3840.${bin}kb.cool"
     hicCompareMatrices -m ${mutant_cool} ${control_cool} \

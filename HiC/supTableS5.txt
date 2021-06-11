@@ -1,0 +1,8 @@
+sample	Total_Reads	Paired_Read	Valid_Pairs	Deduplication_Read_Pairs_Uniques	Deduplication_Cis_Far_Uniques
+E12_Limbs_TgN3840_map_mm10	96383826	54092058	52976891	51582332	32235636
+E12_Limbs_TgN3840_map_TgN3840	96383826	81045553	79748405	78059314	40600249
+E12_Limbs_Wt_map_mm10	140552702	80733773	78828076	76191470	49239923
+E12_Limbs_Wt_map_TgN3840	140552702	119258173	117078012	113895884	61080153
+
+
+Note: The number of pairs is increased when mapped on TgN3840 as no filtering on mapping quality was performed.

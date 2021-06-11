@@ -124,3 +124,11 @@ if [ ! -e ${pathForScripts}/parse_output.sh ]; then
   exit 1
 fi
 ${pathForScripts}/parse_output.sh mapseq_minilims ${desc} res_files_mapping_${genome}
+
+# Extract mapping rate:
+if [ ! -e ${pathForScripts}/getMappingRate.py ]; then
+  echo "${pathForScripts}/getMappingRate.py does not exists"
+  exit 1
+fi
+python ${pathForScripts}/getMappingRate.py --directory res_files_mapping_${genome} \
+  --output res_files_mapping_${genome}/mapping_summary.txt

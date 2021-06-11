@@ -28,7 +28,7 @@ pathForSizes="${genomePath}/${genome}.fa.fai"
 pathForHiCUP="${path}/hicup_v0.7.3_mod/"
 pathForFastq="${path}/fastq/"
 
-bins="40"
+bins="20 40"
 
 nThreads=4
 
