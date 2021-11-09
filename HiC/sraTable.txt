@@ -1,4 +1,4 @@
-SRRXXXXX E12_Limbs_TgN3840_hiseq
-SRRXXXXX E12_Limbs_TgN3840_nextseq
-SRRXXXXX E12_Limbs_Wt_hiseq
-SRRXXXXX E12_Limbs_Wt_nextseq
+SRR13681279 E12_Limbs_TgN3840_hiseq
+SRR13681280 E12_Limbs_TgN3840_nextseq
+SRR13681281 E12_Limbs_Wt_hiseq
+SRR13681282 E12_Limbs_Wt_nextseq
